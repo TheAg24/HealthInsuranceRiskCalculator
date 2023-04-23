@@ -180,7 +180,10 @@
             var smoker = document.getElementById('smoker').value;
 
                     // validate inputs
-   
+        if (isNaN(age) || isNaN(heightFeet) || isNaN(heightInches) || isNaN(weight) || isNaN(bpSystolic) || isNaN(bpDiastolic)) {
+            alert('Please enter numeric values for age, height, weight, and blood pressure.');
+            return false;
+        }
         if (age < 0 || heightFeet < 0 || heightInches < 0 || weight < 0 || bpSystolic < 0 || bpDiastolic < 0) {
         alert('Please enter positive values for age, height, weight, and blood pressure.');
         return false;
@@ -241,7 +244,7 @@
         } else if (riskScore <= 9) {
             riskLevel = 'high👎👎';
         } else {
-            riskLevel = 'uninsurable❌❌';
+            riskLevel = 'uninsurable❌';
         }
 
         // display result
