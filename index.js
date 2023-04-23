@@ -1,141 +1,291 @@
-const express = require('express')
-app = express()
-
-var url = require('url');
-var dt = require('./date-time');
-
-const port = process.env.PORT || 3000
-const majorVersion = 1
-const minorVersion = 2
-
-// Use Express to publish static HTML, CSS, and JavaScript files that run in the browser. 
-app.use(express.static(__dirname + '/static'))
-
-// The app.get functions below are being processed in Node.js running on the server.
-// Implement a custom About page.
-app.get('/about', (request, response) => {
-	console.log('Calling "/about" on the Node.js server.')
-	response.type('text/plain')
-	response.send('About Node.js on Azure Template.')
-})
-
-app.get('/version', (request, response) => {
-	console.log('Calling "/version" on the Node.js server.')
-	response.type('text/plain')
-	response.send('Version: '+majorVersion+'.'+minorVersion)
-})
-
-// Return the value of 2 plus 2.
-app.get('/2plus2', (request, response) => {
-	console.log('Calling "/2plus2" on the Node.js server.')
-	response.type('text/plain')
-	response.send('4')
-})
-
-// Add x and y which are both passed in on the URL. 
-app.get('/add-two-integers', (request, response) => {
-	console.log('Calling "/add-two-integers" on the Node.js server.')
-	var inputs = url.parse(request.url, true).query
-	let x = parseInt(inputs.x)
-	let y = parseInt(inputs.y)
-	let sum = x + y
-	response.type('text/plain')
-	response.send(sum.toString())
-})
-
-// Template for calculating BMI using height in feet/inches and weight in pounds.
-app.get('/calculate-bmi', (request, response) => {
-	console.log('Calling "/calculate-bmi" on the Node.js server.')
-	var inputs = url.parse(request.url, true).query
-	const heightFeet = parseInt(inputs.feet)
-	const heightInches = parseInt(inputs.inches)
-	const weight = parseInt(inputs.lbs)
-
-	console.log('Height:' + heightFeet + '\'' + heightInches + '\"')
-	console.log('Weight:' + weight + ' lbs.')
-
-	// Todo: Implement unit conversions and BMI calculations.
-	// Todo: Return BMI instead of Todo message.
-
-	response.type('text/plain')
-	response.send('Todo: Implement "/calculate-bmi"')
-})
-
-// Test a variety of functions.
-app.get('/test', (request, response) => {
-    // Write the request to the log. 
-    console.log(request);
-
-    // Return HTML.
-    response.writeHead(200, {'Content-Type': 'text/html'});
-    response.write('<h3>Testing Function</h3>')
-
-    // Access function from a separate JavaScript module.
-    response.write("The date and time are currently: " + dt.myDateTime() + "<br><br>");
-
-    // Show the full url from the request. 
-    response.write("req.url="+request.url+"<br><br>");
-
-    // Suggest adding something tl the url so that we can parse it. 
-    response.write("Consider adding '/test?year=2017&month=July' to the URL.<br><br>");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Health Insurance Risk Calculator</title>
+	<style>
+		body {
+			font-family: Arial, Helvetica, sans-serif;
+			background-color: #678497;
+			color: #333;
+		}
+		h1, h2, h3 {
+			text-align: center;
+			color: #333;
+			margin-top: 0;
+		}
+		form {
+			background-color: #53f5e5;
+			max-width: 600px;
+			margin: 0 auto;
+			padding: 20px;
+			border-radius: 5px;
+			box-shadow: 0 0 10px rgba(0,0,0,0.2);
+		}
+		label {
+			display: block;
+			margin-bottom: 5px;
+			font-weight: bold;
+			color: #333;
+		}
+		input[type="text"] {
+			padding: 10px;
+			font-size: 16px;
+			border: 1px solid #e897be;
+			border-radius: 3px;
+			width: 100%;
+			box-sizing: border-box;
+		}
+		input[type="radio"] {
+			margin-right: 5px;
+		}
+		button {
+			display: block;
+			margin: 20px auto 0;
+			padding: 10px 20px;
+			font-size: 16px;
+			background-color: #1E90FF;
+			color: #33c8e9;
+			border: none;
+			border-radius: 3px;
+			cursor: pointer;
+		}
+		button:hover {
+			background-color: #00BFFF;
+		}
+		#results {
+			background-color: #62d2ff;
+			max-width: 600px;
+			margin: 20px auto;
+			padding: 20px;
+			border-radius: 5px;
+			box-shadow: 0 0 10px rgba(0,0,0,0.2);
+			display: none;
+		}
+		table {
+			margin-bottom: 10px;
+			width: 100%;
+			border-collapse: collapse;
+		}
+		th, td {
+			padding: 8px;
+			text-align: left;
+			border: 1px solid #3eccd1;
+		}
+		th {
+			background-color: #48dad0;
+		}
+		.low-risk {
+			color: #75f575;
+			font-weight: bold;
+		}
+		.moderate-risk {
+			color: #FFA500;
+			font-weight: bold;
+		}
+		.high-risk {
+			color: #FF4500;
+			font-weight: bold;
+		}
+		.uninsurable {
+			color: #808080;
+			font-weight: bold;
+		}
+		.error {
+			color: #FF4500;
+			font-weight: bold;
+			margin-top: 5px;
+		}
+	</style>
+<head>
+	<style>
+		.result {
+			display: block;
+		}
+	</style>
+</head>
+<body>
     
-	// Parse the query string for values that are being passed on the URL.
-	var q = url.parse(request.url, true).query;
-    var txt = q.year + " " + q.month;
-    response.write("txt="+txt);
+	<div class="container">
+		<h1>Insurance Risk Assessment</h1>
+		<p>Please answer the following questions to calculate your insurance risk.</p>
 
-    // Close the response
-    response.end('<h3>The End.</h3>');
-})
+		<form onsubmit="return calculateRisk()">
+			<label for="age">Age (years)</label>
+			<input type="text" id="age" name="age" placeholder="Enter your age in years">
 
-// Return Batman as JSON.
-var spiderMan = {
-	"firstName":"Bruce",
-	"lastName":"Wayne",
-	"preferredName":"Batman",
-	"email":"darkknight@lewisu.edu",
-	"phoneNumber":"800-bat-mann",
-	"city":"Gotham",
-	"state":"NJ",
-	"zip":"07101",
-	"lat":"40.73",
-	"lng":"-74.17",
-	"favoriteHobby":"Flying",
-	"class":"cpsc-24700-001",
-	"room":"AS-104-A",
-	"startTime":"2 PM CT",
-	"seatNumber":"",
-	"inPerson":[
-		"Monday",
-		"Wednesday"
-	],
-	"virtual":[
-		"Friday"
-	]
-}
+			<label for="height">Height (feet/inches)</label>
+			<input type="text" id="height-feet" name="height-feet" placeholder="Feet"> 
+			<input type="text" id="height-inches" name="height-inches" placeholder="Inches">
 
-app.get('/batman', (request, response) => {
-	console.log('Calling "/batman" on the Node.js server.')
-	response.type('application/json')
-	response.send(JSON.stringify(spiderMan, null, 4))
-})
+			<label for="weight">Weight (pounds)</label>
+			<input type="text" id="weight" name="weight" placeholder="Enter your weight in pounds">
 
-// Custom 404 page.
-app.use((request, response) => {
-  response.type('text/plain')
-  response.status(404)
-  response.send('404 - Not Found')
-})
+			<label for="bp-systolic">Blood Pressure (systolic/diastolic)</label>
+			<input type="text" id="bp-systolic" name="bp-systolic" placeholder="Systolic"> 
+			<input type="text" id="bp-diastolic" name="bp-diastolic" placeholder="Diastolic">
 
-// Custom 500 page.
-app.use((err, request, response, next) => {
-  console.error(err.message)
-  response.type('text/plain')
-  response.status(500)
-  response.send('500 - Server Error')
-})
+			<label for="diabetes">Do you have a family history of diabetes?</label>
+			<select id="diabetes" name="diabetes">
+				<option value="">Select an option</option>
+				<option value="yes">Yes</option>
+				<option value="no">No</option>
+			</select>
 
-app.listen(port, () => console.log(
-  `Express started at \"http://localhost:${port}\"\n` +
-  `press Ctrl-C to terminate.`)
-)
+            <label for="cancer">Do you have a family history of cancer?</label>
+		    <select id="cancer" name="cancer">
+                <option value="">Select an option</option>
+				<option value="yes">Yes</option>
+				<option value="no">No</option>
+			</select>
+
+            <label for="heart-disease"> Do you have a family history ofheart disease?</label>
+            <select id="heart-disease" name="heart-disease">
+                <option value="">Select an option</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+    
+            <label for="smoker">Do you smoke?</label>
+            <select id="smoker" name="smoker">
+                <option value="">Select an option</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+    
+            <input type="submit" value="Calculate Risk" onclick="return calculateRisk()">
+        </form>
+    
+        <div class="result" id="result">
+            <h3>Insurance Risk Assessment Result:</h3>
+            <p id="risk-score"></p>
+            <p id="risk-level"></p>
+        </div>
+    
+    </div>
+    
+    <script>
+        function calculateRisk() {
+           
+            var age = parseInt(document.getElementById('age').value);
+            var heightFeet = parseInt(document.getElementById('height-feet').value);
+            var heightInches = parseInt(document.getElementById('height-inches').value);
+            var weight = parseInt(document.getElementById('weight').value);
+            var bpSystolic = parseInt(document.getElementById('bp-systolic').value);
+            var bpDiastolic = parseInt(document.getElementById('bp-diastolic').value);
+            var diabetes = document.getElementById('diabetes').value;
+            var cancer = document.getElementById('cancer').value;
+            var heartDisease = document.getElementById('heart-disease').value;
+            var smoker = document.getElementById('smoker').value;
+
+                    // validate inputs
+        if (isNaN(age) || isNaN(heightFeet) || isNaN(heightInches) || isNaN(weight) || isNaN(bpSystolic) || isNaN(bpDiastolic)) {
+            alert('Please enter numeric values for age, height, weight, and blood pressure.');
+            return false;
+        }
+        if (age < 0 || heightFeet < 0 || heightInches < 0 || weight < 0 || bpSystolic < 0 || bpDiastolic < 0) {
+        alert('Please enter positive values for age, height, weight, and blood pressure.');
+        return false;
+        }
+        if (heightFeet > 8 || heightInches > 11) {
+            alert('Please enter a valid height.');
+            return false;
+        }
+        if (weight > 1000) {
+            alert('Please enter a valid weight.');
+            return false;
+        }
+        if (bpSystolic > 300 || bpDiastolic > 200) {
+            alert('Please enter a valid blood pressure.');
+            return false;
+        }
+
+        // calculate BMI
+        var heightInchesTotal = (heightFeet * 12) + heightInches;
+        var bmi = (weight / (heightInchesTotal * heightInchesTotal)) * 703;
+
+        // calculate risk score
+        var riskScore = 0;
+        if (age >= 40 && age < 60) {
+            riskScore += 1;
+        } else if (age >= 60) {
+            riskScore += 2;
+        }
+        if (bmi >= 30) {
+            riskScore += 2;
+        } else if (bmi >= 25) {
+            riskScore += 1;
+        }
+        if (bpSystolic >= 140 || bpDiastolic >= 90) {
+            riskScore += 2;
+        } else if (bpSystolic >= 120 || bpDiastolic >= 80) {
+            riskScore += 1;
+        }
+        if (diabetes === 'yes') {
+            riskScore += 2;
+        }
+        if (cancer === 'yes') {
+            riskScore += 2;
+        }
+        if (heartDisease === 'yes') {
+            riskScore += 2;
+        }
+        if (smoker === 'yes') {
+            riskScore += 2;
+        }
+
+        // display risk level
+        var riskLevel = '';
+        if (riskScore <= 3) {
+            riskLevel = 'low👍👍';
+        } else if (riskScore <= 6) {
+            riskLevel = 'moderate';
+        } else if (riskScore <= 9) {
+            riskLevel = 'high👎👎';
+        } else {
+            riskLevel = 'uninsurable❌❌';
+        }
+
+        // display result
+        var resultElement = document.getElementById('result');
+        resultElement.style.display = 'block';
+        document.getElementById('risk-score').innerHTML = 'Your insurance risk score is ' + riskScore + '.';
+        document.getElementById('risk-level').innerHTML = 'Your insurance risk level is ' + riskLevel + '.';
+
+        
+        var continueEvaluating = confirm("Do you want to evaluate another person?");
+        if (continueEvaluating) {
+            // reset form values
+            document.getElementById('age').value = '';
+            document.getElementById('height-feet').value = '';
+            document.getElementById('height-inches').value = '';
+            document.getElementById('weight').value = '';
+            document.getElementById('bp-systolic').value = '';
+            document.getElementById('bp-diastolic').value = '';
+            document.getElementById('diabetes').value = '';
+            document.getElementById('cancer').value = '';
+            document.getElementById('heart-disease').value = '';
+            document.getElementById('smoker').value = '';
+            
+            document.getElementById('person').innerHTML = parseInt(document.getElementById('person').innerHTML) + 1;
+            document.getElementById('person-form').style.display = 'block';
+            document.getElementById('person').innerHTML = parseInt(document.getElementById('person').innerHTML) + 1;
+            document.getElementById('person-form').style.display = 'block';
+
+            // hide current form and result
+            document.getElementById('risk-level').innerHTML = '';
+            document.getElementById('risk-score').innerHTML = '';
+            document.getElementById('result').style.display = 'none';
+
+            } else {
+            alert("Thank you for using our insurance risk evaluation tool!");
+    }
+
+        return false;
+    }
+   
+
+</script>
+</body>
+</html>
